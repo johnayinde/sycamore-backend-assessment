@@ -324,6 +324,12 @@ The test suite includes:
 
 ## API Documentation
 
+**[View Full API Documentation on Postman](https://documenter.getpostman.com/view/11191710/2sBXc7MkB2#5579c884-ad0a-4ff3-84ab-def1accf901c)**
+
+The complete API documentation with examples, request/response schemas, and interactive testing is available on Postman.
+
+### Quick Reference
+
 ### Health Check
 
 ```bash

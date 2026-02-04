@@ -53,12 +53,9 @@ describe('Task A: Idempotent Wallet - WalletService', () => {
   });
 
   describe('Transfer Operations', () => {
-    let wallet1: Wallet;
-    let wallet2: Wallet;
-
     beforeEach(async () => {
-      wallet1 = await WalletService.createWallet('sender', 1000);
-      wallet2 = await WalletService.createWallet('receiver', 500);
+      await WalletService.createWallet('sender', 1000);
+      await WalletService.createWallet('receiver', 500);
     });
 
     it('should successfully transfer funds between wallets', async () => {
@@ -143,12 +140,9 @@ describe('Task A: Idempotent Wallet - WalletService', () => {
   });
 
   describe('Idempotency - Double-Tap Prevention', () => {
-    let wallet1: Wallet;
-    let wallet2: Wallet;
-
     beforeEach(async () => {
-      wallet1 = await WalletService.createWallet('sender', 1000);
-      wallet2 = await WalletService.createWallet('receiver', 500);
+      await WalletService.createWallet('sender', 1000);
+      await WalletService.createWallet('receiver', 500);
     });
 
     it('should return same result for duplicate idempotency key (double-tap)', async () => {
@@ -205,7 +199,6 @@ describe('Task A: Idempotent Wallet - WalletService', () => {
       const results = await Promise.allSettled([transfer1Promise, transfer2Promise]);
 
       const succeeded = results.filter((r) => r.status === 'fulfilled');
-      const failed = results.filter((r) => r.status === 'rejected');
 
       // At least one should succeed
       expect(succeeded.length).toBeGreaterThanOrEqual(1);
@@ -218,9 +211,9 @@ describe('Task A: Idempotent Wallet - WalletService', () => {
 
   describe('Race Condition Prevention', () => {
     it('should prevent double-spending through concurrent transfers', async () => {
-      const wallet1 = await WalletService.createWallet('sender', 1000);
-      const wallet2 = await WalletService.createWallet('receiver1', 0);
-      const wallet3 = await WalletService.createWallet('receiver2', 0);
+      await WalletService.createWallet('sender', 1000);
+      await WalletService.createWallet('receiver1', 0);
+      await WalletService.createWallet('receiver2', 0);
 
       // Try to transfer 600 to two different receivers concurrently
       // Should only allow one to succeed (total balance is 1000)
@@ -238,10 +231,7 @@ describe('Task A: Idempotent Wallet - WalletService', () => {
         idempotencyKey: uuidv4(),
       });
 
-      const results = await Promise.allSettled([transfer1, transfer2]);
-
-      const succeeded = results.filter((r) => r.status === 'fulfilled').length;
-      const failed = results.filter((r) => r.status === 'rejected').length;
+      await Promise.allSettled([transfer1, transfer2]);
 
       // Both might succeed if they execute sequentially due to locking,
       // but balance constraints should prevent overspending
@@ -265,8 +255,8 @@ describe('Task A: Idempotent Wallet - WalletService', () => {
 
   describe('Transaction History', () => {
     it('should retrieve transaction history for a user', async () => {
-      const wallet1 = await WalletService.createWallet('user1', 1000);
-      const wallet2 = await WalletService.createWallet('user2', 500);
+      await WalletService.createWallet('user1', 1000);
+      await WalletService.createWallet('user2', 500);
 
       // Perform multiple transfers
       await WalletService.processTransfer({

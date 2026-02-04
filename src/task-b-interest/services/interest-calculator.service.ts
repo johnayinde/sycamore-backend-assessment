@@ -1,7 +1,7 @@
-import Decimal from 'decimal.js';
-import Loan from '../models/loan.model';
-import InterestLog from '../models/interest-log.model';
-import { AppError } from '../../utils/error-handler';
+import Decimal from "decimal.js";
+import Loan from "../models/loan.model";
+import InterestLog from "../models/interest-log.model";
+import { AppError } from "../../utils/error-handler";
 
 // Configure Decimal.js for precision (up to 20 decimal places)
 Decimal.set({ precision: 20 });
@@ -57,23 +57,23 @@ export class InterestCalculatorService {
   /**
    * Calculate daily interest for a loan
    * Formula: Daily Interest = Principal × (Annual Rate / Days in Year)
-   * 
+   *
    * @param request - Calculation request with loan ID and date
    * @returns Detailed calculation result
    */
   static async calculateDailyInterest(
-    request: InterestCalculationRequest
+    request: InterestCalculationRequest,
   ): Promise<InterestCalculationResponse> {
     const { loanId, calculationDate } = request;
 
     // Fetch the loan
     const loan = await Loan.findByPk(loanId);
     if (!loan) {
-      throw new AppError('Loan not found', 404);
+      throw new AppError("Loan not found", 404);
     }
 
-    if (loan.status !== 'ACTIVE') {
-      throw new AppError('Cannot calculate interest for inactive loan', 400);
+    if (loan.status !== "ACTIVE") {
+      throw new AppError("Cannot calculate interest for inactive loan", 400);
     }
 
     // Check if calculation already exists for this date
@@ -86,9 +86,15 @@ export class InterestCalculatorService {
 
     if (existingLog) {
       // Return existing calculation
+      // DATEONLY fields return as string
+      const dateStr =
+        typeof existingLog.calculationDate === "string"
+          ? existingLog.calculationDate
+          : existingLog.calculationDate.toISOString().split("T")[0];
+
       return {
         loanId: existingLog.loanId,
-        calculationDate: existingLog.calculationDate.toISOString().split('T')[0],
+        calculationDate: dateStr,
         principalAmount: existingLog.principalAmount,
         annualInterestRate: loan.interestRate,
         dailyInterestRate: existingLog.dailyInterestRate,
@@ -117,7 +123,7 @@ export class InterestCalculatorService {
     // Get accumulated interest up to the previous day
     const previousLog = await InterestLog.findOne({
       where: { loanId },
-      order: [['calculationDate', 'DESC']],
+      order: [["calculationDate", "DESC"]],
     });
 
     const previousAccumulated = previousLog
@@ -138,9 +144,15 @@ export class InterestCalculatorService {
       daysInYear,
     });
 
+    // DATEONLY fields return as string, convert for consistent format
+    const dateStr =
+      typeof interestLog.calculationDate === "string"
+        ? interestLog.calculationDate
+        : interestLog.calculationDate.toISOString().split("T")[0];
+
     return {
       loanId: interestLog.loanId,
-      calculationDate: interestLog.calculationDate.toISOString().split('T')[0],
+      calculationDate: dateStr,
       principalAmount: interestLog.principalAmount,
       annualInterestRate: loan.interestRate,
       dailyInterestRate: interestLog.dailyInterestRate,
@@ -161,7 +173,7 @@ export class InterestCalculatorService {
   static async calculateInterestRange(
     loanId: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<InterestCalculationResponse[]> {
     const results: InterestCalculationResponse[] = [];
     const currentDate = new Date(startDate);
@@ -186,10 +198,13 @@ export class InterestCalculatorService {
    * @param upToDate - Calculate up to this date
    * @returns Total accumulated interest
    */
-  static async getAccumulatedInterest(loanId: string, upToDate: Date): Promise<string> {
+  static async getAccumulatedInterest(
+    loanId: string,
+    upToDate: Date,
+  ): Promise<string> {
     const loan = await Loan.findByPk(loanId);
     if (!loan) {
-      throw new AppError('Loan not found', 404);
+      throw new AppError("Loan not found", 404);
     }
 
     // Get the most recent interest log up to the specified date
@@ -197,27 +212,27 @@ export class InterestCalculatorService {
       where: {
         loanId,
         calculationDate: {
-          [require('sequelize').Op.lte]: upToDate,
+          [require("sequelize").Op.lte]: upToDate,
         },
       },
-      order: [['calculationDate', 'DESC']],
+      order: [["calculationDate", "DESC"]],
     });
 
     if (!latestLog) {
       // Calculate from loan start date to upToDate
       await this.calculateInterestRange(loanId, loan.startDate, upToDate);
-      
+
       const newLatestLog = await InterestLog.findOne({
         where: {
           loanId,
           calculationDate: {
-            [require('sequelize').Op.lte]: upToDate,
+            [require("sequelize").Op.lte]: upToDate,
           },
         },
-        order: [['calculationDate', 'DESC']],
+        order: [["calculationDate", "DESC"]],
       });
 
-      return newLatestLog?.accumulatedInterest || '0.00';
+      return newLatestLog?.accumulatedInterest || "0.00";
     }
 
     return latestLog.accumulatedInterest;
@@ -235,14 +250,14 @@ export class InterestCalculatorService {
     userId: string,
     principalAmount: number,
     interestRate: number,
-    startDate: Date
+    startDate: Date,
   ): Promise<Loan> {
     return await Loan.create({
       userId,
       principalAmount: principalAmount.toString(),
       interestRate: interestRate.toString(),
       startDate,
-      status: 'ACTIVE',
+      status: "ACTIVE",
     });
   }
 }
